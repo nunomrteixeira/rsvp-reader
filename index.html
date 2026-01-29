@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark" data-accent="orange">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, viewport-fit=cover">
+    <meta name="description" content="RSVP Reader - Speed read any text with customizable WPM, comprehension tracking, and focus modes. Free, open-source speed reading app.">
+    <meta name="theme-color" content="#0a0a0b" media="(prefers-color-scheme: dark)">
+    <meta name="theme-color" content="#ffffff" media="(prefers-color-scheme: light)">
+    
+    <!-- Security -->
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    
+    <!-- PWA -->
+    <link rel="manifest" href="manifest.json">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="RSVP Reader">
+    <link rel="apple-touch-icon" href="/icons/icon-192.png">
+    
+    <!-- Open Graph / Social -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="RSVP Reader - Speed Reading App">
+    <meta property="og:description" content="Read faster with customizable WPM, focus modes, and comprehension tracking.">
+    <meta property="og:image" content="/icons/icon-512.png">
+    
+    <title>RSVP Reader - Speed Reading App</title>
+    
+    <!-- Fonts - Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Literata:opsz,wght@7..72,400;7..72,500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    
+    <!-- OpenDyslexic Font -->
+    <link href="https://fonts.cdnfonts.com/css/opendyslexic" rel="stylesheet">
+    
+    <!-- Styles -->
+    <link rel="stylesheet" href="app.css">
+    
+    <!-- Critical inline styles for icons and initial render -->
+    <style>
+        .icon { 
+            width: 20px; 
+            height: 20px; 
+            stroke: currentColor; 
+            stroke-width: 2; 
+            fill: none; 
+            stroke-linecap: round; 
+            stroke-linejoin: round;
+            flex-shrink: 0;
+        }
+        .icon.lg {
+            width: 48px;
+            height: 48px;
+        }
+        /* Prevent FOUC */
+        .app { opacity: 0; transition: opacity 0.2s; }
+        .app.loaded { opacity: 1; }
+        /* Skip link - visible on focus for accessibility */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: #000;
+            color: #fff;
+            padding: 8px 16px;
+            z-index: 10000;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+        }
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <!-- Skip to main content for accessibility -->
+    <a href="#main-content" class="skip-link">
+        Skip to main content
+    </a>
+
+    <!-- SVG Icons Sprite - Hidden but accessible -->
+    <svg xmlns="http://www.w3.org/2000/svg" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden;">
+        <defs>
+            <symbol id="icon-play" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></symbol>
+            <symbol id="icon-pause" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/></symbol>
+            <symbol id="icon-skip-back" viewBox="0 0 24 24"><polygon points="19 20 9 12 19 4 19 20"/><line x1="5" y1="19" x2="5" y2="5"/></symbol>
+            <symbol id="icon-skip-forward" viewBox="0 0 24 24"><polygon points="5 4 15 12 5 20 5 4"/><line x1="19" y1="5" x2="19" y2="19"/></symbol>
+            <symbol id="icon-rotate-ccw" viewBox="0 0 24 24"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 2.13-9.36L1 10"/></symbol>
+            <symbol id="icon-settings" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></symbol>
+            <symbol id="icon-x" viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></symbol>
+            <symbol id="icon-sun" viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></symbol>
+            <symbol id="icon-moon" viewBox="0 0 24 24"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></symbol>
+            <symbol id="icon-volume-2" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"/></symbol>
+            <symbol id="icon-volume-x" viewBox="0 0 24 24"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></symbol>
+            <symbol id="icon-radio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="2"/><path d="M16.24 7.76a6 6 0 0 1 0 8.49m-8.48-.01a6 6 0 0 1 0-8.49m11.31-2.82a10 10 0 0 1 0 14.14m-14.14 0a10 10 0 0 1 0-14.14"/></symbol>
+            <symbol id="icon-cloud-rain" viewBox="0 0 24 24"><line x1="16" y1="13" x2="16" y2="21"/><line x1="8" y1="13" x2="8" y2="21"/><line x1="12" y1="15" x2="12" y2="23"/><path d="M20 16.58A5 5 0 0 0 18 7h-1.26A8 8 0 1 0 4 15.25"/></symbol>
+            <symbol id="icon-wind" viewBox="0 0 24 24"><path d="M9.59 4.59A2 2 0 1 1 11 8H2m10.59 11.41A2 2 0 1 0 14 16H2m15.73-8.27A2.5 2.5 0 1 1 19.5 12H2"/></symbol>
+            <symbol id="icon-flame" viewBox="0 0 24 24"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"/></symbol>
+            <symbol id="icon-link" viewBox="0 0 24 24"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></symbol>
+            <symbol id="icon-maximize" viewBox="0 0 24 24"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+            <symbol id="icon-minimize" viewBox="0 0 24 24"><polyline points="4 14 10 14 10 20"/><polyline points="20 10 14 10 14 4"/><line x1="14" y1="10" x2="21" y2="3"/><line x1="3" y1="21" x2="10" y2="14"/></symbol>
+            <symbol id="icon-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
+            <symbol id="icon-chevron-up" viewBox="0 0 24 24"><polyline points="18 15 12 9 6 15"/></symbol>
+            <symbol id="icon-chevron-down" viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></symbol>
+            <symbol id="icon-bar-chart" viewBox="0 0 24 24"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></symbol>
+            <symbol id="icon-keyboard" viewBox="0 0 24 24"><rect x="2" y="4" width="20" height="16" rx="2" ry="2"/><line x1="6" y1="8" x2="6" y2="8"/><line x1="10" y1="8" x2="10" y2="8"/><line x1="14" y1="8" x2="14" y2="8"/><line x1="18" y1="8" x2="18" y2="8"/><line x1="8" y1="12" x2="8" y2="12"/><line x1="12" y1="12" x2="12" y2="12"/><line x1="16" y1="12" x2="16" y2="12"/><line x1="7" y1="16" x2="17" y2="16"/></symbol>
+            <symbol id="icon-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></symbol>
+            <symbol id="icon-check" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></symbol>
+            <symbol id="icon-upload" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
+            <symbol id="icon-file-text" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></symbol>
+            <symbol id="icon-book-open" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
+            <symbol id="icon-search" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></symbol>
+            <symbol id="icon-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></symbol>
+            <symbol id="icon-folder" viewBox="0 0 24 24"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></symbol>
+            <symbol id="icon-trash" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></symbol>
+            <symbol id="icon-download" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
+            <symbol id="icon-edit" viewBox="0 0 24 24"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></symbol>
+            <symbol id="icon-zap" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></symbol>
+            <symbol id="icon-alert-circle" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
+        </defs>
+    </svg>
+
+    <!-- No JavaScript Fallback -->
+    <noscript>
+        <div style="padding:40px;text-align:center;background:#1f1f23;color:#fafafa;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+            <h1 style="font-size:24px;margin-bottom:16px;">JavaScript Required</h1>
+            <p style="color:#a1a1aa;max-width:400px;">
+                RSVP Reader requires JavaScript to function. Please enable JavaScript in your browser settings and reload the page.
+            </p>
+        </div>
+    </noscript>
+
+    <div class="app" id="app">
+        <!-- Header -->
+        <header class="app-header" role="banner">
+            <a href="#" class="app-logo" aria-label="RSVP Reader - Home">
+                <span class="app-logo-icon" aria-hidden="true">R</span>
+                <span>RSVP Reader</span>
+            </a>
+            <nav class="app-header-actions" role="navigation" aria-label="Main navigation">
+                <button class="btn btn-icon btn-ghost" id="btn-library" type="button" data-tooltip="Library" aria-label="Open library" aria-haspopup="dialog">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-book-open"/></svg>
+                </button>
+                <button class="btn btn-icon btn-ghost" id="btn-theme" type="button" data-tooltip="Toggle theme" aria-label="Toggle dark/light theme" aria-pressed="true">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-moon"/></svg>
+                </button>
+                <button class="btn btn-icon btn-ghost" id="btn-stats" type="button" data-tooltip="Statistics" aria-label="View statistics" aria-haspopup="dialog">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-bar-chart"/></svg>
+                </button>
+                <button class="btn btn-icon btn-ghost" id="btn-settings" type="button" data-tooltip="Settings" aria-label="Open settings" aria-haspopup="dialog">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-settings"/></svg>
+                </button>
+            </nav>
+        </header>
+
+        <!-- Main Content -->
+        <main class="app-main" id="main-content" role="main">
+            <!-- Input Area (shown when no text loaded) -->
+            <section class="input-area" id="input-section" aria-label="Text input">
+                <!-- Tab Navigation -->
+                <div class="input-tabs" role="tablist" aria-label="Input methods">
+                    <button type="button" class="input-tab active" data-tab="paste" id="tab-paste" role="tab" aria-selected="true" aria-controls="content-paste">
+                        Paste Text
+                    </button>
+                    <button type="button" class="input-tab" data-tab="url" id="tab-url" role="tab" aria-selected="false" aria-controls="content-url">
+                        Import URL
+                    </button>
+                    <button type="button" class="input-tab" data-tab="file" id="tab-file" role="tab" aria-selected="false" aria-controls="content-file">
+                        Upload File
+                    </button>
+                </div>
+                
+                <!-- Paste Text Tab -->
+                <div class="input-tab-content active" id="content-paste" role="tabpanel" aria-labelledby="tab-paste">
+                    <div class="textarea-wrapper">
+                        <label for="text-input" class="sr-only">Enter or paste your text</label>
+                        <textarea 
+                            class="textarea" 
+                            id="text-input" 
+                            placeholder="Paste your text here to start speed reading...
+
+You can paste articles, essays, book chapters, or any text you want to read faster.
+
+Tips:
+• Use keyboard shortcuts (Space to play/pause)
+• Adjust WPM to find your comfortable speed
+• Enable comprehension checks for better retention"
+                            spellcheck="false"
+                            autocomplete="off"
+                            aria-describedby="word-count"
+                        ></textarea>
+                    </div>
+                    <div class="textarea-footer">
+                        <span class="word-count" id="word-count" aria-live="polite">0 words</span>
+                        <div class="input-actions">
+                            <button class="btn" id="btn-sample" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-file-text"/></svg>
+                                Sample Text
+                            </button>
+                            <button class="btn btn-primary" id="btn-load" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-zap"/></svg>
+                                Start Reading
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- URL Import Tab -->
+                <div class="input-tab-content" id="content-url" role="tabpanel" aria-labelledby="tab-url" hidden>
+                    <div class="url-input-wrapper">
+                        <div class="url-input-group">
+                            <svg class="icon url-icon" aria-hidden="true"><use href="#icon-link"/></svg>
+                            <label for="url-input" class="sr-only">Article URL</label>
+                            <input 
+                                type="url" 
+                                class="url-input" 
+                                id="url-input" 
+                                placeholder="https://example.com/article"
+                                autocomplete="url"
+                                inputmode="url"
+                            >
+                        </div>
+                        <p class="setting-description" style="margin-top: var(--space-sm);">
+                            Enter a URL to fetch and extract readable text from articles, blog posts, or web pages.
+                        </p>
+                    </div>
+                    <div class="textarea-footer">
+                        <span class="url-status" id="url-status" aria-live="polite"></span>
+                        <button class="btn btn-primary" id="btn-fetch-url" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg>
+                            Fetch Article
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- File Upload Tab -->
+                <div class="input-tab-content" id="content-file" role="tabpanel" aria-labelledby="tab-file" hidden>
+                    <div class="file-upload-wrapper" id="file-drop-zone" role="button" tabindex="0" aria-label="Drop file here or click to browse. Supported formats: TXT, PDF, EPUB, DOCX, HTML">
+                        <div class="file-upload-icon" aria-hidden="true">
+                            <svg class="icon lg"><use href="#icon-folder"/></svg>
+                        </div>
+                        <div class="file-upload-text">
+                            <strong>Drop file here</strong> or click to browse
+                        </div>
+                        <div class="file-upload-formats" aria-hidden="true">
+                            TXT, PDF, EPUB, DOCX, HTML
+                        </div>
+                        <input type="file" id="file-input" accept=".txt,.pdf,.epub,.docx,.html,.htm" hidden aria-hidden="true">
+                    </div>
+                    <div class="textarea-footer">
+                        <span class="file-status" id="file-status" aria-live="polite"></span>
+                        <button class="btn btn-primary" id="btn-browse-file" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-folder"/></svg>
+                            Browse Files
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Reader Area (shown when text loaded) -->
+            <section class="reader hidden" id="reader-section" aria-label="Reading area">
+                <div class="reader-display">
+                    <!-- Word Display -->
+                    <div class="word-container" id="word-container">
+                        <div class="word-display-wrapper">
+                            <span class="word-peripheral word-prev" id="word-prev" aria-hidden="true"></span>
+                            <span class="word-display" id="word-display" role="status" aria-live="off" aria-atomic="true">Ready to read</span>
+                            <span class="word-peripheral word-next" id="word-next" aria-hidden="true"></span>
+                        </div>
+                    </div>
+                    
+                    <!-- Completion Overlay - covers entire reader display -->
+                    <div class="completion-overlay" id="completion-overlay" role="dialog" aria-labelledby="completion-title" aria-hidden="true">
+                        <div class="completion-icon" aria-hidden="true">
+                            <svg class="icon"><use href="#icon-check"/></svg>
+                        </div>
+                        <h2 class="completion-title" id="completion-title">Reading Complete!</h2>
+                        
+                        <!-- Session Summary Card -->
+                        <div class="session-summary" id="session-summary">
+                            <div class="session-summary-row">
+                                <span class="session-label">Words Read</span>
+                                <span class="session-value" id="summary-words">0</span>
+                            </div>
+                            <div class="session-summary-row">
+                                <span class="session-label">Time</span>
+                                <span class="session-value" id="summary-time">0:00</span>
+                            </div>
+                            <div class="session-summary-row">
+                                <span class="session-label">Average WPM</span>
+                                <span class="session-value" id="summary-wpm">0</span>
+                            </div>
+                            <div class="session-summary-row highlight">
+                                <span class="session-label">🔥 Streak</span>
+                                <span class="session-value" id="summary-streak">0 days</span>
+                            </div>
+                        </div>
+
+                        <div class="completion-actions">
+                            <button class="btn" id="btn-restart" type="button">Read Again</button>
+                            <button class="btn btn-primary" id="btn-new-text-complete" type="button">New Text</button>
+                        </div>
+                    </div>
+
+                    <!-- Progress -->
+                    <div class="progress-container">
+                        <div 
+                            class="progress-bar" 
+                            id="progress-bar" 
+                            role="progressbar" 
+                            aria-valuenow="0" 
+                            aria-valuemin="0" 
+                            aria-valuemax="100"
+                            aria-label="Reading progress"
+                            tabindex="0"
+                        >
+                            <div class="progress-fill" id="progress-fill"></div>
+                        </div>
+                        <div class="progress-stats">
+                            <span id="progress-current" aria-label="Current position">0 / 0</span>
+                            <div class="warmup-indicator hidden" id="warmup-indicator">
+                                <svg class="icon" style="width:12px;height:12px" aria-hidden="true"><use href="#icon-zap"/></svg>
+                                <span class="warmup-label">Warming up</span>
+                                <div class="warmup-track">
+                                    <div class="warmup-fill" id="warmup-progress"></div>
+                                </div>
+                            </div>
+                            <span id="progress-time" aria-label="Time remaining">0:00 remaining</span>
+                        </div>
+                    </div>
+
+                    <!-- Controls -->
+                    <div class="controls" role="toolbar" aria-label="Reading controls">
+                        <div class="control-group" role="group" aria-label="Playback">
+                            <button class="btn btn-icon" id="btn-reset" data-tooltip="Reset (R)" aria-label="Reset to beginning" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-rotate-ccw"/></svg>
+                            </button>
+                            <button class="btn btn-icon" id="btn-prev" data-tooltip="Previous (←)" aria-label="Previous word" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-skip-back"/></svg>
+                            </button>
+                            <button class="btn btn-icon btn-primary lg" id="btn-play" data-tooltip="Play/Pause (Space)" aria-label="Play" aria-pressed="false" type="button">
+                                <svg class="icon" id="icon-play-pause" aria-hidden="true"><use href="#icon-play"/></svg>
+                            </button>
+                            <button class="btn btn-icon" id="btn-next" data-tooltip="Next (→)" aria-label="Next word" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-skip-forward"/></svg>
+                            </button>
+                            <button class="btn btn-icon" id="btn-sound" data-tooltip="Toggle Sound" aria-label="Toggle ambient sound" aria-pressed="false" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-volume-x"/></svg>
+                            </button>
+                        </div>
+
+                        <div class="wpm-control" role="group" aria-label="Words per minute">
+                            <button class="wpm-btn" id="btn-wpm-down" data-tooltip="Decrease WPM (↓)" aria-label="Decrease speed" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-chevron-down"/></svg>
+                            </button>
+                            <div class="wpm-display-wrapper">
+                                <div class="wpm-value" id="wpm-display" data-tooltip="Click to edit" role="button" tabindex="0" aria-label="300 words per minute. Click to edit.">300</div>
+                                <div class="wpm-label" aria-hidden="true">WPM</div>
+                            </div>
+                            <button class="wpm-btn" id="btn-wpm-up" data-tooltip="Increase WPM (↑)" aria-label="Increase speed" type="button">
+                                <svg class="icon" aria-hidden="true"><use href="#icon-chevron-up"/></svg>
+                            </button>
+                        </div>
+
+                        <button class="btn" id="btn-new-text" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg>
+                            New Text
+                        </button>
+
+                        <button class="btn btn-icon" id="btn-focus" data-tooltip="Focus Mode (F)" aria-label="Enter focus mode" type="button">
+                            <svg class="icon" aria-hidden="true"><use href="#icon-maximize"/></svg>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Focus Mode Overlay -->
+            <div class="focus-mode" id="focus-mode" role="dialog" aria-label="Focus mode" aria-modal="true" aria-hidden="true">
+                <div class="focus-word-container">
+                    <div class="focus-word-wrapper">
+                        <span class="word-peripheral word-prev" id="focus-word-prev" aria-hidden="true"></span>
+                        <span class="focus-word-display" id="focus-word-display" role="status" aria-live="off" aria-atomic="true"></span>
+                        <span class="word-peripheral word-next" id="focus-word-next" aria-hidden="true"></span>
+                    </div>
+                    <div class="focus-progress" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Reading progress">
+                        <div class="focus-progress-fill" id="focus-progress-fill"></div>
+                    </div>
+                </div>
+                <div class="focus-controls" id="focus-controls">
+                    <button class="btn btn-icon lg" id="btn-focus-play" aria-label="Play" aria-pressed="false" type="button">
+                        <svg class="icon" id="focus-icon-play" aria-hidden="true"><use href="#icon-play"/></svg>
+                    </button>
+                    <div class="focus-wpm" id="focus-wpm" aria-label="Current speed">300 WPM</div>
+                    <button class="btn btn-icon lg" id="btn-focus-exit" data-tooltip="Exit Focus Mode" aria-label="Exit focus mode" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+                    </button>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Library Panel -->
+    <div class="panel-overlay library-overlay" id="library-overlay" aria-hidden="true"></div>
+    <aside class="library-panel" id="library-panel" role="dialog" aria-labelledby="library-title" aria-hidden="true">
+        <div class="panel-header">
+            <h2 class="panel-title" id="library-title">Library</h2>
+            <button class="btn btn-icon btn-ghost" id="btn-close-library" aria-label="Close library" type="button">
+                <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+            </button>
+        </div>
+        <div class="panel-content">
+            <!-- Search -->
+            <div class="library-search">
+                <svg class="icon" aria-hidden="true"><use href="#icon-search"/></svg>
+                <label for="library-search" class="sr-only">Search library</label>
+                <input type="search" class="library-search-input" id="library-search" placeholder="Search library..." autocomplete="off">
+            </div>
+
+            <!-- Library Items -->
+            <div class="library-list" id="library-list" role="list" aria-label="Saved texts">
+                <!-- Populated by JS -->
+            </div>
+
+            <!-- Empty State -->
+            <div class="library-empty" id="library-empty">
+                <svg class="icon lg" aria-hidden="true"><use href="#icon-book-open"/></svg>
+                <p>Your library is empty</p>
+                <span class="setting-description">Texts you save will appear here</span>
+            </div>
+
+            <!-- Library Stats -->
+            <div class="library-stats" id="library-stats">
+                <span id="library-count" aria-live="polite">0 texts</span>
+                <div class="library-actions">
+                    <button class="btn btn-text" id="btn-import-library" type="button">Import</button>
+                    <button class="btn btn-text" id="btn-export-library" type="button">Export All</button>
+                    <button class="btn btn-text" id="btn-clear-library" type="button">Clear All</button>
+                </div>
+            </div>
+            <input type="file" id="library-import-input" accept=".json,.txt" multiple hidden>
+        </div>
+    </aside>
+
+    <!-- Settings Panel -->
+    <div class="panel-overlay" id="panel-overlay" aria-hidden="true"></div>
+    <aside class="settings-panel" id="settings-panel" role="dialog" aria-labelledby="settings-title" aria-hidden="true">
+        <div class="panel-header">
+            <h2 class="panel-title" id="settings-title">Settings</h2>
+            <button class="btn btn-icon btn-ghost" id="btn-close-settings" aria-label="Close settings" type="button">
+                <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+            </button>
+        </div>
+        <div class="panel-content">
+            <!-- Profiles -->
+            <section class="panel-section" aria-labelledby="profile-section-title">
+                <h3 class="panel-section-title" id="profile-section-title">Reading Profile</h3>
+                <div class="profile-grid" id="profile-grid" role="radiogroup" aria-label="Select reading profile">
+                    <!-- Populated by JS -->
+                </div>
+            </section>
+
+            <!-- Display -->
+            <section class="panel-section" aria-labelledby="display-section-title">
+                <h3 class="panel-section-title" id="display-section-title">Display</h3>
+                
+                <div class="setting-row">
+                    <div>
+                        <label class="setting-label" for="setting-font-size">Font Size</label>
+                        <div class="setting-description">Reading display text size</div>
+                    </div>
+                    <select class="select" id="setting-font-size">
+                        <option value="32">Small</option>
+                        <option value="42" selected>Medium</option>
+                        <option value="54">Large</option>
+                        <option value="66">Extra Large</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <label class="setting-label" for="setting-font-family">Font Family</label>
+                        <div class="setting-description">Reading display typeface</div>
+                    </div>
+                    <select class="select" id="setting-font-family">
+                        <option value="serif" selected>Serif (best for reading)</option>
+                        <option value="sans">Sans-Serif</option>
+                        <option value="mono">Monospace</option>
+                        <option value="dyslexic">OpenDyslexic</option>
+                    </select>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-orp">ORP Highlight</span>
+                        <div class="setting-description">Color the optimal recognition point letter</div>
+                    </div>
+                    <button class="toggle" id="toggle-orp" role="switch" aria-checked="false" aria-labelledby="label-orp" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-bionic">Bionic Reading</span>
+                        <div class="setting-description">Bold first part of words for faster reading</div>
+                    </div>
+                    <button class="toggle" id="toggle-bionic" role="switch" aria-checked="false" aria-labelledby="label-bionic" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label" id="label-accent">Accent Color</span>
+                        <div class="setting-description">Theme and ORP highlight color</div>
+                    </div>
+                    <div class="color-picker-group" id="color-picker-group" role="radiogroup" aria-labelledby="label-accent">
+                        <button class="color-swatch active" data-color="orange" style="background: #f97316;" role="radio" aria-checked="true" aria-label="Orange" type="button"></button>
+                        <button class="color-swatch" data-color="red" style="background: #ef4444;" role="radio" aria-checked="false" aria-label="Red" type="button"></button>
+                        <button class="color-swatch" data-color="blue" style="background: #3b82f6;" role="radio" aria-checked="false" aria-label="Blue" type="button"></button>
+                        <button class="color-swatch" data-color="green" style="background: #22c55e;" role="radio" aria-checked="false" aria-label="Green" type="button"></button>
+                        <button class="color-swatch" data-color="purple" style="background: #a855f7;" role="radio" aria-checked="false" aria-label="Purple" type="button"></button>
+                        <button class="color-swatch" data-color="pink" style="background: #ec4899;" role="radio" aria-checked="false" aria-label="Pink" type="button"></button>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-peripheral">Peripheral Preview</span>
+                        <div class="setting-description">Show previous/next words faded</div>
+                    </div>
+                    <button class="toggle" id="toggle-peripheral" role="switch" aria-checked="false" aria-labelledby="label-peripheral" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+            </section>
+
+            <!-- Timing -->
+            <section class="panel-section" aria-labelledby="timing-section-title">
+                <h3 class="panel-section-title" id="timing-section-title">Timing</h3>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-chunk">Words per Flash</span>
+                        <div class="setting-description">Multi-word (faster)</div>
+                    </div>
+                    <div class="btn-group" id="chunk-size-group" role="radiogroup" aria-labelledby="label-chunk">
+                        <button class="btn-group-item active" data-value="1" role="radio" aria-checked="true" type="button">1</button>
+                        <button class="btn-group-item" data-value="2" role="radio" aria-checked="false" type="button">2</button>
+                        <button class="btn-group-item" data-value="3" role="radio" aria-checked="false" type="button">3</button>
+                    </div>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-fixed">Fixed Timing</span>
+                        <div class="setting-description">Same duration for all words (ignores word length)</div>
+                    </div>
+                    <button class="toggle" id="toggle-fixed" role="switch" aria-checked="false" aria-labelledby="label-fixed" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-punctuation">Punctuation Pauses</span>
+                        <div class="setting-description">Extra pause at sentence endings</div>
+                    </div>
+                    <button class="toggle" id="toggle-punctuation" role="switch" aria-checked="false" aria-labelledby="label-punctuation" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row" id="pause-duration-row">
+                    <div class="setting-info">
+                        <label class="setting-label" for="setting-pause">Pause Duration</label>
+                        <div class="setting-description">Extra time: <span id="pause-value">200</span>ms</div>
+                    </div>
+                    <input type="range" class="slider compact" id="setting-pause" min="50" max="500" step="25" value="200" aria-describedby="pause-value">
+                </div>
+
+                <div class="setting-row">
+                    <div class="setting-info">
+                        <span class="setting-label" id="label-warmup">Warmup</span>
+                        <div class="setting-description">Start slower, gradually increase speed</div>
+                    </div>
+                    <button class="toggle" id="toggle-warmup" role="switch" aria-checked="false" aria-labelledby="label-warmup" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row" id="warmup-duration-row">
+                    <div class="setting-info">
+                        <label class="setting-label" for="setting-warmup-duration">Warmup Duration</label>
+                        <div class="setting-description">Time to reach full speed: <span id="warmup-duration-value">10</span>s</div>
+                    </div>
+                    <input type="range" class="slider compact" id="setting-warmup-duration" min="5" max="60" step="5" value="10" aria-describedby="warmup-duration-value">
+                </div>
+            </section>
+
+            <!-- Comprehension -->
+            <section class="panel-section" aria-labelledby="comprehension-section-title">
+                <h3 class="panel-section-title" id="comprehension-section-title">Comprehension</h3>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-comprehension">Comprehension Checks</span>
+                        <div class="setting-description">Periodic quizzes to test retention</div>
+                    </div>
+                    <button class="toggle" id="toggle-comprehension" role="switch" aria-checked="false" aria-labelledby="label-comprehension" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row" id="comprehension-interval-row">
+                    <div class="setting-info">
+                        <label class="setting-label" for="setting-interval">Check Interval</label>
+                        <div class="setting-description">Words between checks: <span id="interval-value">100</span></div>
+                    </div>
+                    <input type="range" class="slider compact" id="setting-interval" min="50" max="500" step="25" value="100" aria-describedby="interval-value">
+                </div>
+            </section>
+
+            <!-- Speed Training -->
+            <section class="panel-section" aria-labelledby="training-section-title">
+                <h3 class="panel-section-title" id="training-section-title">Speed Training</h3>
+                <p class="setting-description" style="margin-bottom: var(--space-md);">Gradually increase your reading speed over sessions</p>
+
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label" id="label-speed-training">Training Mode</span>
+                        <div class="setting-description">Auto-increase WPM after each session</div>
+                    </div>
+                    <button class="toggle" id="toggle-speed-training" role="switch" aria-checked="false" aria-labelledby="label-speed-training" type="button">
+                        <span class="toggle-thumb"></span>
+                    </button>
+                </div>
+
+                <div class="setting-row" id="speed-increment-row">
+                    <div>
+                        <label class="setting-label" for="setting-increment">Increment</label>
+                        <div class="setting-description">+<span id="increment-value">25</span> WPM per session</div>
+                    </div>
+                    <input type="range" class="slider" id="setting-increment" min="10" max="50" step="5" value="25" aria-describedby="increment-value">
+                </div>
+
+                <div class="setting-row" id="speed-max-row">
+                    <div>
+                        <label class="setting-label" for="setting-max-wpm">Max WPM</label>
+                        <div class="setting-description">Training ceiling: <span id="max-wpm-value">600</span></div>
+                    </div>
+                    <input type="range" class="slider" id="setting-max-wpm" min="400" max="1000" step="50" value="600" aria-describedby="max-wpm-value">
+                </div>
+
+                <div class="training-progress" id="training-progress" aria-label="Training progress">
+                    <div class="training-stat">
+                        <span class="training-stat-value" id="training-current">300</span>
+                        <span class="training-stat-label">Current WPM</span>
+                    </div>
+                    <div class="training-arrow" aria-hidden="true">→</div>
+                    <div class="training-stat">
+                        <span class="training-stat-value" id="training-next">325</span>
+                        <span class="training-stat-label">Next Goal</span>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Sound -->
+            <section class="panel-section" aria-labelledby="sound-section-title">
+                <h3 class="panel-section-title" id="sound-section-title">Ambient Sound</h3>
+                <p class="setting-description" style="margin-bottom: var(--space-md);">Background audio to improve focus and reduce distractions</p>
+                
+                <div class="sound-selector" id="sound-selector" role="radiogroup" aria-label="Select ambient sound">
+                    <button class="sound-option active" data-sound="none" role="radio" aria-checked="true" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-volume-x"/></svg>
+                        Off
+                    </button>
+                    <button class="sound-option" data-sound="whitenoise" role="radio" aria-checked="false" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-radio"/></svg>
+                        White Noise
+                    </button>
+                    <button class="sound-option" data-sound="rain" role="radio" aria-checked="false" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-cloud-rain"/></svg>
+                        Rain
+                    </button>
+                    <button class="sound-option" data-sound="wind" role="radio" aria-checked="false" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-wind"/></svg>
+                        Wind
+                    </button>
+                    <button class="sound-option" data-sound="fire" role="radio" aria-checked="false" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-flame"/></svg>
+                        Fire
+                    </button>
+                </div>
+
+                <div class="setting-row" style="margin-top: var(--space-md);">
+                    <label class="setting-label" for="setting-volume">Volume: <span id="volume-value">30</span>%</label>
+                    <input type="range" class="slider" id="setting-volume" min="0" max="100" value="30" style="width: 120px;" aria-describedby="volume-value">
+                </div>
+            </section>
+
+            <!-- Shortcuts -->
+            <section class="panel-section" aria-labelledby="shortcuts-section-title">
+                <h3 class="panel-section-title" id="shortcuts-section-title">Keyboard Shortcuts</h3>
+                <p class="setting-description" style="margin-bottom: var(--space-md);">Click any key to customize</p>
+                <div class="shortcut-list" id="shortcut-list" role="list">
+                    <!-- Populated by JS -->
+                </div>
+                <button class="btn btn-text" id="btn-reset-shortcuts" type="button" style="margin-top: var(--space-md);">
+                    Reset to Defaults
+                </button>
+            </section>
+            
+            <!-- Data Management -->
+            <section class="panel-section" aria-labelledby="data-section-title">
+                <h3 class="panel-section-title" id="data-section-title">Data Management</h3>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">Export Settings</span>
+                        <div class="setting-description">Download your settings as a file</div>
+                    </div>
+                    <button class="btn" id="btn-export-settings" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-download"/></svg>
+                        Export
+                    </button>
+                </div>
+                <div class="setting-row">
+                    <div>
+                        <span class="setting-label">Import Settings</span>
+                        <div class="setting-description">Restore settings from a file</div>
+                    </div>
+                    <button class="btn" id="btn-import-settings" type="button">
+                        <svg class="icon" aria-hidden="true"><use href="#icon-upload"/></svg>
+                        Import
+                    </button>
+                </div>
+                <input type="file" id="settings-import-input" accept=".json" hidden>
+            </section>
+        </div>
+    </aside>
+
+    <!-- Stats Modal -->
+    <div class="modal-backdrop" id="stats-modal" role="dialog" aria-labelledby="stats-modal-title" aria-modal="true" aria-hidden="true">
+        <div class="modal stats-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="stats-modal-title">Reading Statistics</h2>
+                <button class="btn btn-icon btn-ghost" id="btn-close-stats" aria-label="Close statistics" type="button">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <!-- Summary Stats -->
+                <div class="stats-bar" role="list" aria-label="Statistics summary">
+                    <div class="stat-item" role="listitem">
+                        <div class="stat-value" id="stats-total-words">0</div>
+                        <div class="stat-label">Total Words</div>
+                    </div>
+                    <div class="stat-item" role="listitem">
+                        <div class="stat-value" id="stats-total-time">0m</div>
+                        <div class="stat-label">Time Spent</div>
+                    </div>
+                    <div class="stat-item" role="listitem">
+                        <div class="stat-value" id="stats-streak">0</div>
+                        <div class="stat-label">Day Streak</div>
+                    </div>
+                    <div class="stat-item" role="listitem">
+                        <div class="stat-value" id="stats-sessions">0</div>
+                        <div class="stat-label">Sessions</div>
+                    </div>
+                </div>
+
+                <!-- Streak Calendar -->
+                <section class="stats-section" aria-labelledby="activity-title">
+                    <h3 class="stats-section-title" id="activity-title">Reading Activity</h3>
+                    <div class="streak-calendar" id="streak-calendar" role="img" aria-label="Reading activity calendar for the past 12 weeks">
+                        <!-- Populated by JS -->
+                    </div>
+                    <div class="streak-legend" aria-hidden="true">
+                        <span class="streak-legend-label">Less</span>
+                        <div class="streak-legend-scale">
+                            <div class="streak-day level-0"></div>
+                            <div class="streak-day level-1"></div>
+                            <div class="streak-day level-2"></div>
+                            <div class="streak-day level-3"></div>
+                            <div class="streak-day level-4"></div>
+                        </div>
+                        <span class="streak-legend-label">More</span>
+                    </div>
+                </section>
+
+                <!-- WPM Progress Chart -->
+                <section class="stats-section" aria-labelledby="wpm-progress-title">
+                    <h3 class="stats-section-title" id="wpm-progress-title">WPM Progress (30 days)</h3>
+                    <div class="wpm-chart" id="wpm-chart">
+                        <canvas id="wpm-chart-canvas" aria-label="WPM progress chart showing reading speed over the past 30 days"></canvas>
+                    </div>
+                    <div class="wpm-chart-summary">
+                        <span>Avg: <strong id="wpm-chart-avg">0</strong> WPM</span>
+                        <span>Best: <strong id="wpm-chart-best">0</strong> WPM</span>
+                    </div>
+                </section>
+            </div>
+            <div class="modal-footer">
+                <button class="btn" id="btn-reset-stats" type="button">Reset Statistics</button>
+                <button class="btn btn-primary" id="btn-close-stats-footer" type="button">Done</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comprehension Modal -->
+    <div class="modal-backdrop" id="comprehension-modal" role="dialog" aria-labelledby="comprehension-title" aria-modal="true" aria-hidden="true">
+        <div class="modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="comprehension-title">Comprehension Check</h2>
+                <button class="btn btn-icon btn-ghost" id="btn-skip-comprehension" aria-label="Skip this question" type="button">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <p class="comprehension-question" id="comprehension-question">
+                    Which word did NOT appear?
+                </p>
+                <div class="comprehension-options" id="comprehension-options" role="group" aria-label="Answer options">
+                    <!-- Populated by JS -->
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-text" id="btn-skip-comprehension-text" type="button">Skip Question</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Keyboard Shortcuts Modal -->
+    <div class="modal-backdrop" id="shortcuts-modal" role="dialog" aria-labelledby="shortcuts-modal-title" aria-modal="true" aria-hidden="true">
+        <div class="modal shortcuts-modal">
+            <div class="modal-header">
+                <h2 class="modal-title" id="shortcuts-modal-title">Keyboard Shortcuts</h2>
+                <button class="btn btn-icon btn-ghost" id="btn-close-shortcuts" aria-label="Close keyboard shortcuts" type="button">
+                    <svg class="icon" aria-hidden="true"><use href="#icon-x"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="shortcuts-grid" id="shortcuts-help-grid">
+                    <!-- Populated dynamically by JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Container for notifications -->
+    <div class="toast-container" id="toast-container" role="status" aria-live="polite" aria-atomic="true"></div>
+
+    <!-- App Bootstrap -->
+    <script type="module" src="app.js"></script>
+    
+    <!-- Mark app as loaded after JS initializes -->
+    <script>
+        document.getElementById('app').classList.add('loaded');
+    </script>
+</body>
+</html>
