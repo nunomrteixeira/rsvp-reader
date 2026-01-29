@@ -85,7 +85,7 @@ Simply visit the hosted version — no installation required!
 ### Run Locally
 ```bash
 # Clone the repository
-git clone https://github.com/YOUR-USERNAME/rsvp-reader.git
+git clone https://github.com/nunomrteixeira/rsvp-reader.git
 
 # Navigate to the folder
 cd rsvp-reader
